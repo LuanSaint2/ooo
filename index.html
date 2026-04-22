@@ -1,4 +1,187 @@
-<script>
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#1D9E75" />
+  <meta name="description" content="App para controle de fiados da padaria" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="Fiados" />
+  <link rel="manifest" href="/ooo/manifest.json" />
+  <link rel="apple-touch-icon" href="/fiados/icons/icon-192.png" />
+  <title>Fiados da Padaria</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f5f5f0;
+      color: #1a1a1a;
+      min-height: 100vh;
+    }
+    header {
+      background: #1D9E75;
+      color: white;
+      padding: 16px 20px;
+      font-size: 18px;
+      font-weight: 500;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    header span { font-size: 13px; opacity: 0.85; display: block; margin-top: 2px; }
+    .container { padding: 16px; max-width: 600px; margin: 0 auto; }
+
+    .resumo {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    .card-resumo {
+      background: white;
+      border-radius: 12px;
+      padding: 12px;
+      text-align: center;
+      border: 0.5px solid #e0e0d8;
+    }
+    .card-resumo .label { font-size: 11px; color: #888; margin-bottom: 4px; }
+    .card-resumo .valor { font-size: 18px; font-weight: 500; }
+
+    .form-card {
+      background: white;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 16px;
+      border: 0.5px solid #e0e0d8;
+    }
+    .form-card h2 { font-size: 14px; font-weight: 500; margin-bottom: 12px; }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+    .form-full { grid-column: span 2; }
+    .form-group label { font-size: 12px; color: #888; display: block; margin-bottom: 4px; }
+    input {
+      width: 100%;
+      border: 0.5px solid #ccc;
+      border-radius: 8px;
+      padding: 8px 10px;
+      font-size: 14px;
+      background: #fafaf8;
+      color: #1a1a1a;
+    }
+    input:focus { outline: none; border-color: #1D9E75; }
+
+    .btn {
+      cursor: pointer;
+      border: 0.5px solid #ccc;
+      background: transparent;
+      border-radius: 8px;
+      padding: 8px 16px;
+      font-size: 13px;
+      color: #1a1a1a;
+    }
+    .btn-green { background: #1D9E75; color: white; border-color: #0F6E56; font-size: 14px; padding: 10px 18px; width: 100%; border: none;}
+    .btn-pago { background: #1D9E75; color: white; border-color: #0F6E56; font-size: 12px; padding: 4px 10px; border-radius: 6px; cursor: pointer; border: none; }
+    .btn-del { background: #E24B4A; color: white; border-color: #A32D2D; font-size: 12px; padding: 4px 10px; border-radius: 6px; cursor: pointer; border: none; }
+    .btn-copy { 
+      background: transparent; border: none; cursor: pointer; 
+      font-size: 12px; margin-left: 6px; opacity: 0.6; padding: 2px;
+    }
+    .btn-copy:hover { opacity: 1; }
+
+    .erro { font-size: 12px; color: #E24B4A; margin-top: 8px; display: block; }
+
+    .cliente-card {
+      background: white;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 12px;
+      border: 0.5px solid #e0e0d8;
+    }
+    .cliente-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+    .avatar {
+      width: 40px; height: 40px; border-radius: 50%;
+      background: #E6F1FB; color: #0C447C;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 500; font-size: 13px; flex-shrink: 0;
+    }
+    .cliente-info { margin-left: 10px; flex-grow: 1; }
+    .cliente-nome { font-weight: 500; font-size: 15px; display: flex; align-items: center; }
+    .cliente-sub { font-size: 12px; color: #888; margin-top: 2px; }
+    .cliente-total { text-align: right; }
+    .cliente-total .label { font-size: 11px; color: #888; }
+    .cliente-total .valor { font-size: 18px; font-weight: 500; color: #E24B4A; }
+
+    .registros { border-top: 0.5px solid #e0e0d8; padding-top: 10px; }
+    .registro-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 7px 0; border-bottom: 0.5px solid #f0f0e8;
+    }
+    .registro-row:last-child { border-bottom: none; }
+    .registro-data { font-size: 13px; font-weight: 500; }
+    .registro-paes { font-size: 12px; color: #888; margin-left: 8px; }
+    .registro-valor { font-size: 13px; font-weight: 500; margin-right: 8px; }
+    .acoes { display: flex; gap: 6px; align-items: center; }
+
+    .pagos-info { font-size: 12px; color: #1D9E75; margin-top: 8px; }
+    .vazio { text-align: center; color: #aaa; font-size: 14px; padding: 2rem 0; }
+    #loading { text-align: center; padding: 3rem; color: #888; font-size: 14px; }
+
+    @media (prefers-color-scheme: dark) {
+      body { background: #1a1a1a; color: #f0f0f0; }
+      header { background: #0F6E56; }
+      .card-resumo, .form-card, .cliente-card { background: #2a2a2a; border-color: #3a3a3a; }
+      input { background: #333; color: #f0f0f0; border-color: #444; }
+      .cliente-sub, .card-resumo .label, .registro-paes, .cliente-total .label { color: #aaa; }
+      .registro-row { border-color: #3a3a3a; }
+      .registros { border-color: #3a3a3a; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    Fiados da Padaria
+    <span id="header-sub">carregando...</span>
+  </header>
+
+  <div class="container">
+    <div id="loading">Carregando dados...</div>
+    <div id="app" style="display:none;">
+
+      <div class="resumo" id="resumo"></div>
+
+      <div class="form-card">
+        <h2>Registrar novo fiado</h2>
+        <div class="form-grid">
+          <div class="form-group form-full">
+            <label>Nome do cliente</label>
+            <input id="inp-nome" type="text" placeholder="Ex: João Silva" />
+          </div>
+          <div class="form-group">
+            <label>Data</label>
+            <input id="inp-data" type="date" />
+          </div>
+          <div class="form-group">
+            <label>Horário</label>
+            <input id="inp-hora" type="time" />
+          </div>
+          <div class="form-group">
+            <label>Qtd de pães</label>
+            <input id="inp-paes" type="number" placeholder="Ex: 5" min="1" />
+          </div>
+          <div class="form-group">
+            <label>Valor (R$)</label>
+            <input id="inp-valor" type="number" placeholder="Ex: 2.00" step="0.01" min="0" />
+          </div>
+        </div>
+        <button class="btn btn-green" onclick="adicionarFiado()">+ Adicionar fiado</button>
+        <span class="erro" id="msg-erro"></span>
+      </div>
+
+      <div id="lista-clientes"></div>
+    </div>
+  </div>
+
+  <script>
     let fiados = [];
     const hoje = new Date().toISOString().split('T')[0];
     const horaAgora = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
@@ -178,3 +361,5 @@
 
     carregar();
   </script>
+</body>
+</html>
