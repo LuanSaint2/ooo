@@ -1,177 +1,180 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="theme-color" content="#1D9E75" />
-  <meta name="description" content="App para controle de fiados da padaria" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-  <meta name="apple-mobile-web-app-title" content="Fiados" />
-  <link rel="manifest" href="/ooo/manifest.json" />
-  <link rel="apple-touch-icon" href="/fiados/icons/icon-192.png" />
-  <title>Fiados da Padaria</title>
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      background: #f5f5f0;
-      color: #1a1a1a;
-      min-height: 100vh;
-    }
-    header {
-      background: #1D9E75;
-      color: white;
-      padding: 16px 20px;
-      font-size: 18px;
-      font-weight: 500;
-      position: sticky;
-      top: 0;
-      z-index: 10;
-    }
-    header span { font-size: 13px; opacity: 0.85; display: block; margin-top: 2px; }
-    .container { padding: 16px; max-width: 600px; margin: 0 auto; }
+<script>
+    let fiados = [];
+    const hoje = new Date().toISOString().split('T')[0];
+    const horaAgora = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 
-    .resumo {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 10px;
-      margin-bottom: 16px;
+    function carregar() {
+      try {
+        const dados = localStorage.getItem('fiados-padaria');
+        fiados = dados ? JSON.parse(dados) : [];
+        console.log("Dados carregados com sucesso.");
+      } catch(e) {
+        console.error("Erro ao carregar dados, resetando lista:", e);
+        fiados = []; // Reseta se o JSON estiver quebrado
+      }
+      
+      try {
+        const inpData = document.getElementById('inp-data');
+        const inpHora = document.getElementById('inp-hora');
+        if(inpData) inpData.value = hoje;
+        if(inpHora) inpHora.value = horaAgora;
+        
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('app').style.display = 'block';
+        renderizar();
+      } catch(e) {
+        console.error("Erro ao renderizar:", e);
+        document.getElementById('loading').innerHTML = "Erro ao carregar o app. Tente limpar o cache.";
+      }
     }
-    .card-resumo {
-      background: white;
-      border-radius: 12px;
-      padding: 12px;
-      text-align: center;
-      border: 0.5px solid #e0e0d8;
+
+    // Função para limpar dados caso tudo esteja travado
+    function limparDados() {
+        if(confirm("Deseja apagar TODOS os fiados e reiniciar o app?")) {
+            localStorage.removeItem('fiados-padaria');
+            location.reload();
+        }
     }
-    .card-resumo .label { font-size: 11px; color: #888; margin-bottom: 4px; }
-    .card-resumo .valor { font-size: 18px; font-weight: 500; }
 
-    .form-card {
-      background: white;
-      border-radius: 12px;
-      padding: 16px;
-      margin-bottom: 16px;
-      border: 0.5px solid #e0e0d8;
+    function salvar() {
+      localStorage.setItem('fiados-padaria', JSON.stringify(fiados));
     }
-    .form-card h2 { font-size: 14px; font-weight: 500; margin-bottom: 12px; }
-    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
-    .form-full { grid-column: span 2; }
-    .form-group label { font-size: 12px; color: #888; display: block; margin-bottom: 4px; }
-    input {
-      width: 100%;
-      border: 0.5px solid #ccc;
-      border-radius: 8px;
-      padding: 8px 10px;
-      font-size: 14px;
-      background: #fafaf8;
-      color: #1a1a1a;
+
+    function copiarNome(el) {
+        const nome = el.getAttribute('data-nome');
+        navigator.clipboard.writeText(nome).then(() => {
+            alert('Nome copiado: ' + nome);
+        });
     }
-    input:focus { outline: none; border-color: #1D9E75; }
 
-    .btn {
-      cursor: pointer;
-      border: 0.5px solid #ccc;
-      background: transparent;
-      border-radius: 8px;
-      padding: 8px 16px;
-      font-size: 13px;
-      color: #1a1a1a;
+    function adicionarFiado() {
+      const nome = document.getElementById('inp-nome').value.trim();
+      const data = document.getElementById('inp-data').value;
+      const hora = document.getElementById('inp-hora').value;
+      const paes = parseInt(document.getElementById('inp-paes').value);
+      const valor = parseFloat(document.getElementById('inp-valor').value);
+      const erro = document.getElementById('msg-erro');
+      
+      if (!nome || !data || !hora || isNaN(paes) || isNaN(valor)) {
+        erro.textContent = 'Preencha todos os campos!'; return;
+      }
+      erro.textContent = '';
+      fiados.push({ id: Date.now(), nome, data, hora, paes, valor, pago: false });
+      salvar();
+      document.getElementById('inp-nome').value = '';
+      document.getElementById('inp-paes').value = '';
+      document.getElementById('inp-valor').value = '';
+      document.getElementById('inp-data').value = hoje;
+      document.getElementById('inp-hora').value = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+      renderizar();
     }
-    .btn-green { background: #1D9E75; color: white; border-color: #0F6E56; font-size: 14px; padding: 10px 18px; width: 100%; border: none;}
-    .btn-pago { background: #1D9E75; color: white; border-color: #0F6E56; font-size: 12px; padding: 4px 10px; border-radius: 6px; cursor: pointer; border: none; }
-    .btn-del { background: #E24B4A; color: white; border-color: #A32D2D; font-size: 12px; padding: 4px 10px; border-radius: 6px; cursor: pointer; border: none; }
-    .btn-copy { 
-      background: transparent; border: none; cursor: pointer; 
-      font-size: 12px; margin-left: 6px; opacity: 0.6; padding: 2px;
+
+    function marcarPago(id) {
+      fiados = fiados.map(f => f.id === id ? {...f, pago: true} : f);
+      salvar(); renderizar();
     }
-    .btn-copy:hover { opacity: 1; }
 
-    .erro { font-size: 12px; color: #E24B4A; margin-top: 8px; display: block; }
-
-    .cliente-card {
-      background: white;
-      border-radius: 12px;
-      padding: 16px;
-      margin-bottom: 12px;
-      border: 0.5px solid #e0e0d8;
+    function excluir(id) {
+      if (!confirm('Remover este fiado?')) return;
+      fiados = fiados.filter(f => f.id !== id);
+      salvar(); renderizar();
     }
-    .cliente-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
-    .avatar {
-      width: 40px; height: 40px; border-radius: 50%;
-      background: #E6F1FB; color: #0C447C;
-      display: flex; align-items: center; justify-content: center;
-      font-weight: 500; font-size: 13px; flex-shrink: 0;
+
+    function formatData(d) {
+      if(!d) return "";
+      const [y,m,dia] = d.split('-'); return `${dia}/${m}/${y}`;
     }
-    .cliente-info { margin-left: 10px; flex-grow: 1; }
-    .cliente-nome { font-weight: 500; font-size: 15px; display: flex; align-items: center; }
-    .cliente-sub { font-size: 12px; color: #888; margin-top: 2px; }
-    .cliente-total { text-align: right; }
-    .cliente-total .label { font-size: 11px; color: #888; }
-    .cliente-total .valor { font-size: 18px; font-weight: 500; color: #E24B4A; }
 
-    .registros { border-top: 0.5px solid #e0e0d8; padding-top: 10px; }
-    .registro-row {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 7px 0; border-bottom: 0.5px solid #f0f0e8;
+    function renderizar() {
+      try {
+          const abertos = fiados.filter(f => !f.pago);
+          const pagos = fiados.filter(f => f.pago);
+          const totalDev = abertos.reduce((s,f) => s+(f.valor || 0), 0);
+          const totalPago = pagos.reduce((s,f) => s+(f.valor || 0), 0);
+          const nClientes = [...new Set(abertos.map(f => f.nome.toLowerCase()))].length;
+
+          document.getElementById('header-sub').textContent =
+            nClientes > 0 ? `${nClientes} cliente(s) com fiado aberto` : 'Nenhum fiado em aberto';
+
+          document.getElementById('resumo').innerHTML = `
+            <div class="card-resumo">
+              <div class="label">Em aberto</div>
+              <div class="valor" style="color:#E24B4A">R$ ${totalDev.toFixed(2)}</div>
+            </div>
+            <div class="card-resumo">
+              <div class="label">Clientes</div>
+              <div class="valor">${nClientes}</div>
+            </div>
+            <div class="card-resumo">
+              <div class="label">Recebido</div>
+              <div class="valor" style="color:#1D9E75">R$ ${totalPago.toFixed(2)}</div>
+            </div>
+          `;
+
+          const clientes = {};
+          fiados.forEach(f => {
+            const k = f.nome.toLowerCase();
+            if (!clientes[k]) clientes[k] = { nome: f.nome, registros: [] };
+            clientes[k].registros.push(f);
+          });
+
+          const lista = document.getElementById('lista-clientes');
+          if (Object.keys(clientes).length === 0) {
+            lista.innerHTML = '<div class="vazio">Nenhum fiado registrado ainda.</div>'; return;
+          }
+
+          lista.innerHTML = Object.values(clientes).map(c => {
+            const ab = c.registros.filter(r => !r.pago);
+            const pg = c.registros.filter(r => r.pago);
+            const totAb = ab.reduce((s,r) => s+(r.valor || 0), 0);
+            const totPaes = ab.reduce((s,r) => s+(r.paes || 0), 0);
+            const iniciais = c.nome.split(' ').map(n=>n[0]).join('').substring(0,2).toUpperCase();
+
+            return `
+              <div class="cliente-card">
+                <div class="cliente-header">
+                  <div style="display:flex;align-items:center; flex-grow: 1;">
+                    <div class="avatar">${iniciais}</div>
+                    <div class="cliente-info">
+                      <div class="cliente-nome">
+                        ${c.nome}
+                        <button class="btn-copy" onclick="copiarNome(this)" data-nome="${c.nome}" title="Copiar nome">📋</button>
+                      </div>
+                      <div class="cliente-sub">${c.registros.length}x no mês · ${totPaes} pães em aberto</div>
+                    </div>
+                  </div>
+                  <div class="cliente-total">
+                    <div class="label">Em aberto</div>
+                    <div class="valor">R$ ${totAb.toFixed(2)}</div>
+                  </div>
+                </div>
+                ${ab.length > 0 ? `
+                  <div class="registros">
+                    ${ab.map(r => `
+                      <div class="registro-row">
+                        <div>
+                          <span class="registro-data">${formatData(r.data)} ${r.hora ? 'às ' + r.hora : ''}</span>
+                          <span class="registro-paes">${r.paes} pães</span>
+                        </div>
+                        <div class="acoes">
+                          <span class="registro-valor">R$ ${(r.valor || 0).toFixed(2)}</span>
+                          <button class="btn-pago" onclick="marcarPago(${r.id})">Pago</button>
+                          <button class="btn-del" onclick="excluir(${r.id})">X</button>
+                        </div>
+                      </div>
+                    `).join('')}
+                  </div>
+                ` : ''}
+                ${pg.length > 0 ? `
+                  <div class="pagos-info">${pg.length} pagamento(s) quitado(s) — R$ ${pg.reduce((s,r)=>s+(r.valor || 0),0).toFixed(2)}</div>
+                ` : ''}
+              </div>
+            `;
+          }).join('');
+      } catch(e) {
+          console.error("Erro na renderização:", e);
+      }
     }
-    .registro-row:last-child { border-bottom: none; }
-    .registro-data { font-size: 13px; font-weight: 500; }
-    .registro-paes { font-size: 12px; color: #888; margin-left: 8px; }
-    .registro-valor { font-size: 13px; font-weight: 500; margin-right: 8px; }
-    .acoes { display: flex; gap: 6px; align-items: center; }
 
-    .pagos-info { font-size: 12px; color: #1D9E75; margin-top: 8px; }
-    .vazio { text-align: center; color: #aaa; font-size: 14px; padding: 2rem 0; }
-    #loading { text-align: center; padding: 3rem; color: #888; font-size: 14px; }
-
-    @media (prefers-color-scheme: dark) {
-      body { background: #1a1a1a; color: #f0f0f0; }
-      header { background: #0F6E56; }
-      .card-resumo, .form-card, .cliente-card { background: #2a2a2a; border-color: #3a3a3a; }
-      input { background: #333; color: #f0f0f0; border-color: #444; }
-      .cliente-sub, .card-resumo .label, .registro-paes, .cliente-total .label { color: #aaa; }
-      .registro-row { border-color: #3a3a3a; }
-      .registros { border-color: #3a3a3a; }
-    }
-  </style>
-</head>
-<body>
-  <header>
-    Fiados da Padaria
-    <span id="header-sub">carregando...</span>
-  </header>
-
-  <div class="container">
-    <div id="loading">Carregando dados...</div>
-    <div id="app" style="display:none;">
-
-      <div class="resumo" id="resumo"></div>
-
-      <div class="form-card">
-        <h2>Registrar novo fiado</h2>
-        <div class="form-grid">
-          <div class="form-group form-full">
-            <label>Nome do cliente</label>
-            <input id="inp-nome" type="text" placeholder="Ex: João Silva" />
-          </div>
-          <div class="form-group">
-            <label>Data</label>
-            <input id="inp-data" type="date" />
-          </div>
-          <div class="form-group">
-            <label>Horário</label>
-            <input id="inp-hora" type="time" />
-          </div>
-          <div class="form-group">
-            <label>Qtd de pães</label>
-            <input id="inp-paes" type="number" placeholder="Ex: 5" min="1" />
-          </div>
-          <div class="form-group">
-            <label>Valor (R$)</label>
-            <input id="inp-valor" type="number" placeholder="Ex: 2.00" step="0.01" min="0" />
-          </div>
-        </div>
-        <button class="btn btn-green" onclick="adicionarFiado()">+ Adicionar fiado</button>
-        <span class="
+    carregar();
+  </script>
